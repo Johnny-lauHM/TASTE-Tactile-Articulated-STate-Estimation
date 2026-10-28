@@ -87,3 +87,9 @@ Sim-to-real switches (all off by default): `obs_real`, `dr`, `dr_hand_delay`, `t
   howpublished = {\url{https://github.com/Johnny-lauHM/TASTE-Tactile-Articulated-STate-Estimation}}
 }
 ```
+
+## License
+
+The code is released under the [MIT License](LICENSE). Bundled third-party files keep their own licenses:
+`assets/tacmap_maps/` (Sharpa TacMap, Apache-2.0, see its LICENSE and NOTICE) and `assets/reference/robogym/` (OpenAI
+robogym, MIT).
