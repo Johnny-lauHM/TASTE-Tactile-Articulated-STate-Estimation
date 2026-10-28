@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TASTE: Tactile Articulated State Estimation</title>
+<meta name="description" content="TASTE estimates a Rubik's cube's pose and layer angle from touch and proprioception, so two dexterous hands can solve it without vision.">
+<meta property="og:title" content="TASTE: Tactile Articulated State Estimation">
+<meta property="og:description" content="Solving a Rubik's cube by touch: two Sharpa Wave hands on Franka FR3 arms, no cameras.">
+<meta property="og:image" content="media/blind_dashboard.jpg">
+<link rel="stylesheet" href="assets/site.css">
+<script>document.documentElement.classList.add("js")</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="#top">TASTE</a>
+    <nav aria-label="Sections">
+      <a href="#highlights">Highlights</a>
+      <a href="#method">How it works</a>
+      <a href="#results">Results</a>
+      <a href="#estimation">Estimation</a>
+      <a href="#realism">Toward the real hand</a>
+      <a href="#limits">Limitations</a>
+      <a href="#cite">Citation</a>
+    </nav>
+    <a class="pill" href="https://github.com/Johnny-lauHM/TASTE-Tactile-Articulated-STate-Estimation">Code</a>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero" id="top">
+  <p class="eyebrow">TASTE · Tactile Articulated STate Estimation</p>
+  <h1>Solve a Rubik’s cube<br>by touch.</h1>
+  <p class="lede">Two dexterous hands estimate the cube’s pose and its turning layer from fingertip touch and joint angles alone, and solve it with no camera in the loop.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/Johnny-lauHM/TASTE-Tactile-Articulated-STate-Estimation">View the code</a>
+    <a class="btn" href="#cite">Paper (coming soon)</a>
+  </div>
+  <figure class="hero-media">
+    <video src="media/hero_scene.mp4" poster="media/hero_scene.jpg" autoplay muted loop playsinline preload="metadata" aria-label="Simulation: two robot hands on Franka arms turning a Rubik's cube without vision"></video>
+  </figure>
+  <p class="caption">Simulation (Isaac Lab). Two Sharpa Wave SE hands on Franka FR3 arms. The controllers see only the touch-based estimate; the simulator’s state is used for scoring.</p>
+</section>
+
+<section class="band" id="highlights">
+  <div class="wrap">
+    <h2 class="kicker">Highlights</h2>
+    <p class="statement">83% of held-out random scrambles, solved without vision.</p>
+    <div class="cards">
+      <article class="card">
+        <p class="big">83.2%</p>
+        <p>of 256 held-out scrambles solved blind in nominal simulation. The same system with privileged vision solves 90.6%.</p>
+      </article>
+      <article class="card">
+        <p class="big">0.3°</p>
+        <p>median error of the turning layer’s angle, estimated from touch. Cube position: 1.6 mm. Orientation: 1.4°.</p>
+      </article>
+      <article class="card">
+        <p class="big">77 skills</p>
+        <p>in one solve, all chosen and finished on the estimate: finger flicks, wrist rolls, whole-cube turns and regrasps.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="wrap split" id="watch">
+  <div>
+    <h2 class="kicker">Watch</h2>
+    <p class="statement small">What the robot feels, and what it believes.</p>
+    <p>The dashboard shows the ten fingertip tactile images, the skill state machine and its completion probability, and the touch estimate of the cube next to the simulator’s ground truth.</p>
+  </div>
+  <figure>
+    <video src="media/blind_dashboard.mp4" poster="media/blind_dashboard.jpg" controls muted playsinline preload="metadata" aria-label="Blind solve with dashboard: tactile images, state machine, estimate versus simulator"></video>
+    <figcaption>A full blind solve, 77 skills in 151 s of simulated time (sped up).</figcaption>
+  </figure>
+</section>
+
+<section class="band" id="method">
+  <div class="wrap">
+    <h2 class="kicker">How it works</h2>
+    <p class="statement">Feel. Estimate. Act on the estimate.</p>
+    <ol class="flow" aria-label="System pipeline">
+      <li>
+        <span class="step">Sense</span>
+        <strong>Touch and proprioception</strong>
+        <p>Finger joint angles and velocities, fingertip force and torque, and a 30×30 tactile image per fingertip pad (TacMap model of the Sharpa Wave SE), plus the skill the robot is executing.</p>
+      </li>
+      <li>
+        <span class="step">Estimate</span>
+        <strong>TASTE estimator</strong>
+        <p>A small CNN shared across the ten pads feeds a recurrent network (GRU, 384 units). It outputs the cube’s position, orientation and layer angle with their rates, and the probability that the current skill is complete.</p>
+      </li>
+      <li>
+        <span class="step">Act</span>
+        <strong>Skill controllers</strong>
+        <p>Reinforcement-learned skills (PPO, trained with privileged state) and the regrasp servo receive the estimate in place of the simulator’s state. The completion head triggers the next skill.</p>
+      </li>
+      <li>
+        <span class="step">Plan</span>
+        <strong>Solve as skills</strong>
+        <p>A cube solver’s face turns are compiled into the hands’ skill alphabet: U/D flicks, R/L wrist rolls, whole-cube x turns and regrasps, choosing the sequence that is most reliable.</p>
+      </li>
+    </ol>
+    <div class="note">
+      <strong>Estimator in the loop.</strong> The estimator is trained on rollouts driven by its own estimates (DAgger-style: control on the true state is annealed to zero), so it learns from the states its own errors create.
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="results">
+  <h2 class="kicker">Results</h2>
+  <p class="statement">Close to sighted when nominal. Robustness is the open problem.</p>
+  <figure class="chart" aria-labelledby="chart-cap">
+    <svg viewBox="0 0 720 330" role="img" aria-label="Solve rate, sighted versus blind, nominal versus domain randomization, two scramble sets">
+      <g class="grid">
+        <line x1="70" y1="270" x2="700" y2="270"/><line x1="70" y1="216" x2="700" y2="216"/><line x1="70" y1="162" x2="700" y2="162"/>
+        <line x1="70" y1="108" x2="700" y2="108"/><line x1="70" y1="54" x2="700" y2="54"/>
+      </g>
+      <g class="axis">
+        <text x="60" y="274">0</text><text x="60" y="220">20</text><text x="60" y="166">40</text><text x="60" y="112">60</text><text x="60" y="58">80</text>
+        <text x="8" y="12" class="unit">% solved</text>
+      </g>
+      <!-- 100% = 270 px tall from y=270 at 2.7 px per % -->
+      <g class="bars">
+        <rect class="s" x="105" y="25.4" width="60" height="244.6"/><text x="135" y="18">90.6</text>
+        <rect class="b" x="175" y="45.4" width="60" height="224.6"/><text x="205" y="38">83.2</text>
+        <rect class="s" x="290" y="28.4" width="60" height="241.6"/><text x="320" y="21">89.5</text>
+        <rect class="b" x="360" y="57.0" width="60" height="213.0"/><text x="390" y="50">78.9</text>
+        <rect class="s" x="475" y="116.1" width="60" height="153.9"/><text x="505" y="109">57.0</text>
+        <rect class="b" x="545" y="163.4" width="60" height="106.6"/><text x="575" y="156">39.5</text>
+      </g>
+      <g class="xl">
+        <text x="170" y="295">Nominal</text><text x="170" y="313" class="sub">held-out set</text>
+        <text x="355" y="295">Nominal</text><text x="355" y="313" class="sub">development set</text>
+        <text x="540" y="295">Randomized</text><text x="540" y="313" class="sub">held-out set</text>
+      </g>
+    </svg>
+    <div class="legend"><span><i class="s"></i>Sighted (privileged state)</span><span><i class="b"></i>Blind (TASTE)</span></div>
+    <figcaption id="chart-cap">Full solves of 256 random scrambles per bar, frozen system. “Randomized”: observation noise and sensor offsets, friction, masses, gains and command latency are randomized per episode. Sighted uses the simulator’s cube state and completion; blind uses only the estimate.</figcaption>
+  </figure>
+  <div class="table-wrap">
+    <table>
+      <caption>Solve rate with 95% Wilson interval (256 scrambles each)</caption>
+      <thead><tr><th>Condition</th><th>Scramble set</th><th>Sighted</th><th>Blind (TASTE)</th></tr></thead>
+      <tbody>
+        <tr><td>Nominal</td><td>held-out</td><td>90.6% [86.4, 93.6]</td><td>83.2% [78.1, 87.3]</td></tr>
+        <tr><td>Nominal</td><td>development</td><td>89.5% [85.1, 92.6]</td><td>78.9% [73.5, 83.5]</td></tr>
+        <tr><td>Randomized</td><td>held-out</td><td>57.0% [50.9, 62.9]</td><td>39.5% [33.7, 45.6]</td></tr>
+        <tr><td>Randomized</td><td>development</td><td>60.5% [54.4, 66.3]</td><td>44.5% [38.6, 50.7]</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="band" id="estimation">
+  <div class="wrap">
+    <h2 class="kicker">Estimation</h2>
+    <p class="statement">The turning layer, felt to a fraction of a degree.</p>
+    <div class="cards four">
+      <article class="card"><p class="big">1.6 mm</p><p>cube position, median (p90 3.2 mm)</p></article>
+      <article class="card"><p class="big">1.4°</p><p>cube orientation, median (p90 3.1°)</p></article>
+      <article class="card"><p class="big">0.3°</p><p>layer angle, median (p90 1.2°)</p></article>
+      <article class="card"><p class="big">0.95 / 0.98</p><p>completion precision / recall</p></article>
+    </div>
+    <p class="fine">Errors of the frozen estimator on its randomized training distribution, in closed loop with its own estimates. In a passive test, where an external torque turns the layer while the hand only holds the cube, neither joint angles nor fingertip force and torque could track it: the estimate relies on the robot’s own action context.</p>
+  </div>
+</section>
+
+<section class="wrap" id="realism">
+  <h2 class="kicker">Toward the real hand</h2>
+  <p class="statement">Calibrated against the real Wave SE.</p>
+  <div class="split2">
+    <div>
+      <h3>Measured latency</h3>
+      <p>Step responses on the real Sharpa Wave SE show about 20 ms from command to motion. With that fixed latency added to the simulated fingers, the sighted system still solves 85.5% (nominal 90.6%), but the blind system drops to 61.3% (nominal 83.2%). Touch-based estimation is the latency-sensitive part.</p>
+    </div>
+    <div>
+      <h3>Tactile delivery</h3>
+      <p>The real sensor refreshes at about 30 Hz. In an earlier system, delivering tactile data 50 ms and 100 ms late lowered blind solves under randomization from 43% to 36% and 25% (128 scrambles each). Models of the real delivery, a camera-measurement baseline and estimators trained on deployment-like states are being evaluated.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="limits">
+  <div class="wrap narrow">
+    <h2 class="kicker">Limitations</h2>
+    <p class="statement small">What this is not, yet.</p>
+    <ul class="limits">
+      <li><strong>Simulation only.</strong> No result on the real robot yet.</li>
+      <li><strong>An idealized cube.</strong> Layers snap into line when the grip changes faces. A cube with a separately jointed middle layer, or layers that jam when left out of line, cuts the solve rate sharply.</li>
+      <li><strong>Under audit.</strong> We found that the blind system’s cube orientation is re-anchored to the simulator’s value at each skill start. The blind numbers above may therefore be optimistic; the corrected evaluation is pending.</li>
+      <li><strong>Latency.</strong> Finger latency spread over 12–42 ms breaks the current skills; real-hand measurements at the raised speed limit will set the training range.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="wrap narrow" id="cite">
+  <h2 class="kicker">Paper and citation</h2>
+  <p>The paper is in preparation. Until then, please cite the repository.</p>
+  <pre class="bib"><code>@misc{taste2026,
+  title  = {TASTE: Tactile Articulated State Estimation for
+            Blind Bimanual Rubik's Cube Solving},
+  year   = {2026},
+  howpublished = {\url{https://github.com/Johnny-lauHM/TASTE-Tactile-Articulated-STate-Estimation}}
+}</code></pre>
+  <button class="btn copy" type="button" data-copy=".bib code">Copy BibTeX</button>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">TASTE · Tactile Articulated STate Estimation · 2026</div>
+</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>
