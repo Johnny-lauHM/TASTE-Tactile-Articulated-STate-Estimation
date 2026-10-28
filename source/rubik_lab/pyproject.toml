@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rubik_lab"
+version = "0.1.0"
+description = "Bimanual Sharpa Wave Rubik's cube twisting in Isaac Lab"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["rubik_lab*"]

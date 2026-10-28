@@ -1,0 +1,9 @@
+logs/
+outputs/
+cache/
+__pycache__/
+*.pyc
+*.bak_*
+*.bak
+.pytest_cache/
+.claude/
